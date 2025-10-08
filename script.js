@@ -3,8 +3,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize comment system
     initializeCommentSystem();
     
+    // Initialize copy link functionality
+    initializeCopyLinks();
+    
     // Load saved comments
     loadSavedComments();
+    
+    // Handle direct links to sections
+    handleDirectLink();
 });
 
 function initializeCommentSystem() {
@@ -188,6 +194,100 @@ function getTimeAgo(date) {
     if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
     return Math.floor(seconds / 86400) + ' days ago';
 }
+
+// Copy Link Functionality
+function initializeCopyLinks() {
+    const copyButtons = document.querySelectorAll('.copy-link-btn');
+    
+    copyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const sectionId = this.getAttribute('data-section');
+            const url = window.location.origin + window.location.pathname + '#' + sectionId;
+            
+            // Copy to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showCopySuccess(this);
+                }).catch(err => {
+                    // Fallback for older browsers
+                    fallbackCopyToClipboard(url, this);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyToClipboard(url, this);
+            }
+        });
+    });
+}
+
+function fallbackCopyToClipboard(text, button) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopySuccess(button);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        showNotification('Failed to copy link. Please try again.');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showCopySuccess(button) {
+    const originalText = button.textContent;
+    button.classList.add('copied');
+    button.textContent = 'Link Copied!';
+    
+    showNotification('Link copied to clipboard! 🔗');
+    
+    setTimeout(() => {
+        button.classList.remove('copied');
+        button.textContent = originalText;
+    }, 2000);
+}
+
+// Handle direct links to media sections
+function handleDirectLink() {
+    if (window.location.hash) {
+        const targetId = window.location.hash.substring(1);
+        const targetElement = document.getElementById(targetId);
+        
+        if (targetElement) {
+            setTimeout(() => {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Highlight the section briefly
+                targetElement.style.animation = 'highlight 2s ease-out';
+            }, 100);
+        }
+    }
+}
+
+// Add highlight animation
+const highlightStyle = document.createElement('style');
+highlightStyle.textContent = `
+    @keyframes highlight {
+        0% {
+            box-shadow: 0 0 0 0 rgba(6, 69, 173, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 20px 10px rgba(6, 69, 173, 0.2);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(6, 69, 173, 0);
+        }
+    }
+`;
+document.head.appendChild(highlightStyle);
 
 // Video player enhancements
 document.querySelectorAll('video').forEach(video => {
